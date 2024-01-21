@@ -1,4 +1,5 @@
 const mongoose=require('mongoose');
+require('dotenv').config();
 const db_link=process.env.MONGO_URI;
 
 mongoose.connect(db_link)

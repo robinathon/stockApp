@@ -8,7 +8,7 @@ const stockRouter = require('./Routers/stockRouter');
 app.use(express.json());
 async function runDownloadScript() {
     try {
-        await downloadAndProcessData(); 
+        //await downloadAndProcessData(); //putting this under (free-tier deploy services) made heap overflow error
         console.log('Data download and processing completed.');
     } catch (error) {
         console.error('Error during data download and processing:', error);

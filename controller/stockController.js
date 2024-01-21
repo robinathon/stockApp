@@ -4,7 +4,7 @@ module.exports.top10Stocks = async function top10Stocks(req, res) {
   try {
     const result = await stockModel.aggregate([
       {
-        $sort: { DATE: -1 }, // Sort by DATE in descending order
+        $sort: { DATE: -1 }, 
       },
       {
         $group: {
@@ -23,10 +23,10 @@ module.exports.top10Stocks = async function top10Stocks(req, res) {
         },
       },
       {
-        $sort: { percentageChange: -1 }, // Sort by percentageChange in descending order
+        $sort: { percentageChange: -1 }, 
       },
       {
-        $limit: 10, // Take the top 10 results
+        $limit: 10, 
       },
       {
         $project: {
@@ -55,14 +55,13 @@ module.exports.getStockByName = async function getStockByName(req, res) {
   try {
     const stockName = req.params.name;
     const regex = new RegExp(stockName.replace(/\s+/g, "\\s*"), "i");
-    //const result = await stockModel.find({ SC_NAME: { $regex: regex } });
-
+   
     const result = await stockModel.aggregate([
       {
         $match: { SC_NAME: { $regex: regex } },
       },
       {
-        $sort: { DATE: 1 }, // Sort by date in ascending order to get the oldest value first
+        $sort: { DATE: 1 }, 
       },
       {
         $group: {
@@ -70,8 +69,8 @@ module.exports.getStockByName = async function getStockByName(req, res) {
           SC_CODE: { $first: "$SC_CODE" },
           fiftyDaysLowest: { $min: "$LOW" },
           fifyDaysHighest: { $max: "$HIGH" },
-          LastClosingPrice: { $first: "$CLOSE" }, // Take closing price of the latest date
-          FirstOpeningPrice: { $first: "$OPEN" }, // Take opening price of the oldest date
+          LastClosingPrice: { $first: "$CLOSE" }, 
+          FirstOpeningPrice: { $first: "$OPEN" }, 
         },
       },
       {
@@ -179,18 +178,18 @@ module.exports.getFavouriteStocks = async function getFavouriteStocks(req, res) 
     try {
         
             const stocks = await stockModel.aggregate([
-                { $match: { Favourite: true } }, // Filter by Favourite: true
+                { $match: { Favourite: true } }, 
                 {
-                    $sort: { DATE: -1 } // Sort by DATE in descending order (newest first)
+                    $sort: { DATE: -1 } 
                 },
                 {
                     $group: {
-                        _id: '$SC_NAME', // Group by unique identifier (e.g., SC_NAME)
-                        stock: { $first: '$$ROOT' } // Keep the first document (newest date) encountered for each group
+                        _id: '$SC_NAME', 
+                        stock: { $first: '$$ROOT' } 
                     }
                 },
                 {
-                    $replaceRoot: { newRoot: '$stock' } // Project the original document structure
+                    $replaceRoot: { newRoot: '$stock' } 
                 }
             ]);
 
@@ -213,8 +212,8 @@ module.exports.priceHistory=async function priceHistory(req, res){
         const regex = new RegExp(stockName.replace(/\s+/g, '\\s*'), 'i');
 
         const priceHistory = await stockModel.find({ SC_NAME: { $regex: regex } })
-            .sort({ DATE: 1 }) // Sort by date in ascending order
-            .select({ DATE: 1, OPEN: 1, HIGH: 1, LOW: 1, CLOSE: 1 }); // Select relevant fields
+            .sort({ DATE: 1 }) 
+            .select({ DATE: 1, OPEN: 1, HIGH: 1, LOW: 1, CLOSE: 1 }); 
 
         res.json({
             message: 'Stock price history fetched successfully',
