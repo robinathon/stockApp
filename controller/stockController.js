@@ -208,10 +208,8 @@ module.exports.getFavouriteStocks = async function getFavouriteStocks(req, res) 
 
 module.exports.priceHistory=async function priceHistory(req, res){
     try {
-        const stockName = req.params.stockName;
-        const regex = new RegExp(stockName.replace(/\s+/g, '\\s*'), 'i');
-
-        const priceHistory = await stockModel.find({ SC_NAME: { $regex: regex } })
+        const stockCode = req.params.id;
+        const priceHistory = await stockModel.find({ SC_CODE: stockCode })
             .sort({ DATE: 1 }) 
             .select({ DATE: 1, OPEN: 1, HIGH: 1, LOW: 1, CLOSE: 1 }); 
 
