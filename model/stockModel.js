@@ -32,6 +32,12 @@ const stockSchema=new mongoose.Schema({
     CLOSE:{
         type: Number
     },
+    NO_OF_SHRS:{
+        type: Number
+    },
+    NET_TURNOV:{
+        type:Number
+    },
     DATE:{
         type: Date
     }

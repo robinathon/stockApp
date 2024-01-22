@@ -37,6 +37,8 @@ async function downloadSingleDayData(date, orgDate) {
           HIGH: parseFloat(row.HIGH),
           LOW: parseFloat(row.LOW),
           CLOSE: parseFloat(row.CLOSE),
+          NO_OF_SHRS: parseFloat(row.NO_OF_SHRS),
+          NET_TURNOV: parseFloat(row.NET_TURNOV),
           DATE: orgDate,
         };
 

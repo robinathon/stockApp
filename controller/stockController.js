@@ -3,6 +3,7 @@ const userModel = require("../model/userModel");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const JWT_KEY = process.env.JWT_KEY;
+
 module.exports.top10Stocks = async function top10Stocks(req, res) {
   try {
     const result = await stockModel.aggregate([
@@ -13,7 +14,8 @@ module.exports.top10Stocks = async function top10Stocks(req, res) {
         $group: {
           _id: "$SC_CODE",
           SC_NAME: { $first: "$SC_NAME" },
-          percentageChange: {
+          totalDays: { $sum: 1 },
+          averagePercentageChange: {
             $avg: {
               $multiply: [
                 {
@@ -23,20 +25,33 @@ module.exports.top10Stocks = async function top10Stocks(req, res) {
               ],
             },
           },
+          averageVolume: { $avg: "$NO_OF_SHRS" }, 
+          averageNetTurnover: { $avg: "$NET_TURNOV" }, 
         },
       },
       {
-        $sort: { percentageChange: -1 },
+        $match: {
+          totalDays: { $gte: 20 },
+          averageVolume: { $gte: 20000 }, 
+        },
+      },
+      {
+        $sort: {
+          averagePercentageChange: -1,
+          averageVolume: -1,
+          averageNetTurnover: -1, 
+        },
       },
       {
         $limit: 10,
       },
       {
         $project: {
-          SC_CODE: 1,
           SC_CODE: "$_id",
           SC_NAME: "$SC_NAME",
-          percentageChange: 1,
+          averagePercentageChange: 1,
+          averageVolume: 1,
+          averageNetTurnover: 1,
         },
       },
     ]);
@@ -53,6 +68,8 @@ module.exports.top10Stocks = async function top10Stocks(req, res) {
     });
   }
 };
+
+
 
 module.exports.getStockByName = async function getStockByName(req, res) {
   try {
