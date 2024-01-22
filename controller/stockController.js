@@ -1,10 +1,13 @@
 const stockModel = require("../model/stockModel");
-
+const userModel = require("../model/userModel");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const JWT_KEY = process.env.JWT_KEY;
 module.exports.top10Stocks = async function top10Stocks(req, res) {
   try {
     const result = await stockModel.aggregate([
       {
-        $sort: { DATE: -1 }, 
+        $sort: { DATE: -1 },
       },
       {
         $group: {
@@ -23,10 +26,10 @@ module.exports.top10Stocks = async function top10Stocks(req, res) {
         },
       },
       {
-        $sort: { percentageChange: -1 }, 
+        $sort: { percentageChange: -1 },
       },
       {
-        $limit: 10, 
+        $limit: 10,
       },
       {
         $project: {
@@ -55,13 +58,13 @@ module.exports.getStockByName = async function getStockByName(req, res) {
   try {
     const stockName = req.params.name;
     const regex = new RegExp(stockName.replace(/\s+/g, "\\s*"), "i");
-   
+
     const result = await stockModel.aggregate([
       {
         $match: { SC_NAME: { $regex: regex } },
       },
       {
-        $sort: { DATE: 1 }, 
+        $sort: { DATE: 1 },
       },
       {
         $group: {
@@ -69,8 +72,8 @@ module.exports.getStockByName = async function getStockByName(req, res) {
           SC_CODE: { $first: "$SC_CODE" },
           fiftyDaysLowest: { $min: "$LOW" },
           fifyDaysHighest: { $max: "$HIGH" },
-          LastClosingPrice: { $first: "$CLOSE" }, 
-          FirstOpeningPrice: { $first: "$OPEN" }, 
+          LastClosingPrice: { $first: "$CLOSE" },
+          FirstOpeningPrice: { $first: "$OPEN" },
         },
       },
       {
@@ -105,26 +108,33 @@ module.exports.getStockByName = async function getStockByName(req, res) {
   }
 };
 
-module.exports.addToFavourite= async function addToFavourite (req, res) {
+module.exports.addToFavourite = async function addToFavourite(req, res) {
   try {
     let data = req.body;
 
     if (data.CODE) {
       let stockCode = data.CODE;
-      let stocks = await stockModel.find({ SC_CODE: stockCode });
-
-      for (const stock of stocks) {
-        stock.Favourite = true;
-        try {
-          await stock.save();
-        } catch (saveError) {
-          console.error("Error saving stock:", saveError);
+      let stock = await stockModel.findOne({ SC_CODE: stockCode });
+      if (stock) {
+        let token = req.cookies.login;
+        let uid = jwt.verify(token, JWT_KEY).payload;
+        let user = await userModel.findById(uid);
+        const isAlreadyPres=user.favourites.some(favorite => favorite.stockID === stockCode);
+        if(isAlreadyPres){
+          return res.json({
+            message:'this stock is already in you favourite list'
+          })
         }
+        user['favourites'].push({ stockID: stock.SC_CODE });
+        user["confirmPassword"] = user["password"];
+        await user.save();
+        res.json({
+          message: 'added to favourite',
+          favourites: user['favourites']
+        })
+      } else {
+        res.json({ message: "invalid stockCode" });
       }
-      stocks = await stockModel.find({ SC_CODE: stockCode });
-      res.json({
-        message: "Successfully added to favourites",
-      });
     } else {
       res.status(400).json({
         message: "Bad Request",
@@ -140,88 +150,110 @@ module.exports.addToFavourite= async function addToFavourite (req, res) {
   }
 };
 
-module.exports.removeFromFavorites = async function removeFromFavorites  (req, res) {
-    try {
-      let data = req.params;
-  
-      if (data.id) {
-        let stockCode = data.id;
-        let stocks = await stockModel.find({ SC_CODE: stockCode });
-  
-        for (const stock of stocks) {
-          stock.Favourite = false;
-          try {
-            await stock.save();
-          } catch (saveError) {
-            console.error("Error saving stock:", saveError);
-          }
-        }
-        stocks = await stockModel.find({ SC_CODE: stockCode });
+module.exports.removeFromFavorites = async function removeFromFavorites(
+  req,
+  res
+) {
+  try {
+    let data = req.params;
+
+    if (data.id) {
+      let stockCode = data.id;
+      let token = req.cookies.login;
+      let uid = jwt.verify(token, JWT_KEY).payload;
+      await userModel.findByIdAndUpdate(
+        uid,
+        { $pull: { favourites: { stockID: stockCode } } },
+        { new: true }
+      );
+
+      res.json({
+        message: 'deleted succesfully'
+      })
+    } else {
+      res.json({ message: "stock code is missing in parameter" });
+    }
+  } catch (error) {
+    console.error("Error deleting Favourite:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+module.exports.getFavouriteStocks = async function getFavouriteStocks(
+  req,
+  res
+) {
+  try {
+    let token = req.cookies.login;
+    let uid = jwt.verify(token, JWT_KEY).payload;
+    let user = await userModel.findById(uid);
+    let stocks = user["favourites"];
+
+    const stockIds = stocks.map((favorites) => favorites.stockID);
+    if (stockIds.length>0) {
+      //console.log(stockIds);
+      let favStocks = [];
+      for (let i=0;i<stockIds.length;i++) {
+        let id=stockIds[i];
+        let stock = await stockModel
+          .find({ SC_CODE: id })
+          .sort({ DATE: -1 })
+          .limit(1)
+          .select("SC_CODE SC_NAME OPEN CLOSE");
+        //console.log(stock);
+        favStocks.push(stock[0]);
+      }
+      res.json({
+        message: "Success",
+        data: favStocks,
+      });
+    } else {
+      res.json({
+        message: "not any favourites yet",
+      });
+    }
+  } catch (error) {
+    console.error("Error in getFavouriteStocks:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      data: null,
+    });
+  }
+};
+
+module.exports.priceHistory = async function priceHistory(req, res) {
+  try {
+    const data = req.params;
+    if (data.id) {
+      let stockCode = data.id;
+      const priceHistory = await stockModel
+        .find({ SC_CODE: stockCode })
+        .sort({ DATE: 1 })
+        .select({ DATE: 1, OPEN: 1, HIGH: 1, LOW: 1, CLOSE: 1 });
+
+      if (priceHistory.length > 0) {
         res.json({
-          message: "Successfully removed from favourites",
+          message: "Stock price history fetched successfully",
+          data: priceHistory,
         });
       } else {
         res.json({
-          message: "deletion code missing"
+          message: "stock code is invalid",
         });
       }
-    } catch (error) {
-      console.error("Error deleting Favourite:", error);
-      res.status(500).json({
-        message: "Internal server error",
-        error: error.message,
+    } else {
+      res.json({
+        message: "params id field missing",
       });
     }
-  };
-
-module.exports.getFavouriteStocks = async function getFavouriteStocks(req, res) {
-    try {
-        
-            const stocks = await stockModel.aggregate([
-                { $match: { Favourite: true } }, 
-                {
-                    $sort: { DATE: -1 } 
-                },
-                {
-                    $group: {
-                        _id: '$SC_NAME', 
-                        stock: { $first: '$$ROOT' } 
-                    }
-                },
-                {
-                    $replaceRoot: { newRoot: '$stock' } 
-                }
-            ]);
-
-            res.json({
-                message: 'Success',
-                data: stocks
-            });
-    } catch (error) {
-        console.error('Error in getFavouriteStocks:', error);
-        res.status(500).json({
-            message: 'Internal Server Error',
-            data: null
-        });
-    }
+  } catch (error) {
+    console.error("Error fetching stock price history:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 };
-
-module.exports.priceHistory=async function priceHistory(req, res){
-    try {
-        const stockCode = req.params.id;
-        const priceHistory = await stockModel.find({ SC_CODE: stockCode })
-            .sort({ DATE: 1 }) 
-            .select({ DATE: 1, OPEN: 1, HIGH: 1, LOW: 1, CLOSE: 1 }); 
-
-        res.json({
-            message: 'Stock price history fetched successfully',
-            data: priceHistory
-        });
-    } catch (error) {
-        console.error('Error fetching stock price history:', error);
-        res.status(500).json({
-            message: 'Internal server error',
-            error: error.message
-        });
-    }
-}

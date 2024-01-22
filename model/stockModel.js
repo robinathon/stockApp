@@ -4,7 +4,7 @@ const db_link=process.env.MONGO_URI;
 
 mongoose.connect(db_link)
 .then(function(db){
-    console.log('db connected');
+    console.log('stock db connected');
 })
 .catch(function(err){
     console.log(err);
@@ -34,10 +34,6 @@ const stockSchema=new mongoose.Schema({
     },
     DATE:{
         type: Date
-    },
-    Favourite:{
-        type: Boolean,
-        deafult: false
     }
 
 })

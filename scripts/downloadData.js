@@ -16,10 +16,9 @@ async function downloadSingleDayData(date, orgDate) {
       return;
     }
 
-    // Assume that there is only one CSV file in the ZIP
     const csvEntry = zipEntries[0];
 
-    // Check if the entry has a .csv extension
+    
     if (!csvEntry.entryName.toLowerCase().endsWith(".csv")) {
       console.error("ZIP file does not contain a CSV file.");
       return;
