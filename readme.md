@@ -65,7 +65,7 @@ Make sure to review the installation guide and endpoint documentation for a seam
      ```bash
      npm install
      ```
-3. #### make sure to change the mongoDB-url (db_link) in stockModel.js and userModel.js, also the JWT_KEY in authController.js file, in place of JWT_KEY you can put any random string.
+3. #### make sure to add your mongodbURL and JWT_KEY (you can give any random string) under the .env file.
 
 4. **Start the Application:**
    - Run the following command to start the application:
