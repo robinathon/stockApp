@@ -17,7 +17,8 @@ async function runDownloadScript() {
     console.log("Data download and processing completed.");
   } catch (error) {
     console.error("Error during data download and processing:", error);
-  }
+  } 
+  
 }
 
 runDownloadScript().then(() => {
