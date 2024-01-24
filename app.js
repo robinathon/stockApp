@@ -13,7 +13,7 @@ app.use(cookieParser());
 async function runDownloadScript() {
   try {
     //this will fectch latest last 50 days data from BhavCopy BSE
-    //await downloadAndProcessData(); //do not incldue this line while deploying on any free deploying platform, it will exceed the free-tier memory limit.
+    await downloadAndProcessData(); //do not incldue this line while deploying on any free deploying platform, it will exceed the free-tier memory limit.
     console.log("Data download and processing completed.");
   } catch (error) {
     console.error("Error during data download and processing:", error);
