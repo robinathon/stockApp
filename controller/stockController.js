@@ -143,7 +143,6 @@ module.exports.addToFavourite = async function addToFavourite(req, res) {
           })
         }
         user['favourites'].push({ stockID: stock.SC_CODE });
-        user["confirmPassword"] = user["password"];
         await user.save();
         res.json({
           message: 'added to favourite',

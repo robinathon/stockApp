@@ -12,7 +12,7 @@ app.use(cookieParser());
 
 async function runDownloadScript() {
   try {
-    //await downloadAndProcessData(); //putting this under (free-tier deploy services) made heap overflow error
+    await downloadAndProcessData(); //do not incldue this line while deploying on any free deploying platform, it will exceed the free-tier memory limit.
     console.log("Data download and processing completed.");
   } catch (error) {
     console.error("Error during data download and processing:", error);
