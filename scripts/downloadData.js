@@ -58,6 +58,8 @@ async function downloadSingleDayData(date, orgDate) {
   } catch (error) {
     console.error('weekend');
   }
+
+  
 }
 
 async function dropStockCollection() {
