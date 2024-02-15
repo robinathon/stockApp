@@ -58,9 +58,6 @@ module.exports.protectRoute = async function protectRoute(req, res, next) {
       let payload = jwt.verify(token, JWT_KEY);
        // console.log(payload);
       if (payload) {
-        const user = await userModel.findById(payload.payload);
-        req.role = user.role;
-        req.id = user.id.toString();
         next();
       } else {
         return res.json({
